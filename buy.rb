@@ -1,10 +1,14 @@
 #!/usr/bin/env ruby
 require 'json'
 require 'pry'
-# 180819 - lallana
+# 180819 - lallana(4000 buy)
+# 164859 - wallcott
 
 $session_id = 'be663c6e-82e7-4c19-a3eb-d89c251fa2b5'
 $token = '3505819857879335606'
+
+pp 'Provide player id: ruby ./buy.rb player_id max_price' and exit unless ARGV[0]
+pp 'Provide max buy price ruby ./buy.rb player_id max_price' and exit unless ARGV[1]
 
 def fetch_auctions player_id, max_price
   url = "https://utas.external.s3.fut.ea.com/ut/game/fifa17/transfermarket?maskedDefId=#{player_id}&start=0&num=16&type=player&maxb=#{max_price}&micr=#{[150,200,250,300,350,400,450,500,550,600,650].sample}"
@@ -23,7 +27,7 @@ def bid auction_id, bid
 end
 
 loop do
-  auction = fetch_auctions(180819, 4000).first
+  auction = fetch_auctions(ARGV[0], ARGV[1]).first
   if auction
     pp "Found player for #{auction['buyNowPrice']}"
     bid auction['tradeId'], auction['buyNowPrice']
