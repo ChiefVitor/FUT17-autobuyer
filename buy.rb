@@ -3,8 +3,9 @@ require 'json'
 require 'uri'
 require 'net/http'
 
-$session_id = 'fb87dab2-f16a-4510-b87a-480e11dfe7e1'
-$token = '3263364287147515173'
+$session_id = ''
+$token = ''
+raise 'Provide session id and token' if $session_id.empty? or $token.empty?
 
 pp 'Provide player id: ruby ./buy.rb player_id max_buy_price sell_price' and exit unless ARGV[0]
 pp 'Provide max buy price ruby ./buy.rb player_id max_buy_price sell_price' and exit unless ARGV[1]
@@ -19,7 +20,13 @@ def fetch_auctions player_id, max_price
     http.request(req)
   }
   response = JSON.parse res.body
-  response['auctionInfo']
+  if response['auctionInfo']
+    response['auctionInfo'].min_by { |auction| auction['buyNowPrice'].to_i }
+  else
+    puts 'Unexpected response while fetching auctions'
+    puts response
+    exit
+  end
 end
 
 def bid auction_id, bid
@@ -103,8 +110,8 @@ end
 
 loop do
   begin
-    auction = fetch_auctions(ARGV[0], ARGV[1]).first
-    wait = 1.5 + rand
+    auction = fetch_auctions(ARGV[0], ARGV[1])
+    wait = 2 + rand
     if auction
       puts "Found player for #{auction['buyNowPrice']}"
       if money_left = bid(auction['tradeId'], auction['buyNowPrice'])
@@ -113,7 +120,7 @@ loop do
         sleep wait
         move_to_trade_pile id
         put_on_auction id
-        sleep wait + 3
+        sleep wait
       end
     else
       puts "Nothing found. Waiting for #{wait} seconds"
