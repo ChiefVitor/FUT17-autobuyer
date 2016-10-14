@@ -12,7 +12,7 @@ ruby 2.1.2 or newer
 
 
 ```
-ruby ./buy.rb player_id max_buy_price
+ruby ./buy.rb player_id max_buy_price sell_price
 ```
 
 First argument is player id. Here are some sample player ids
