@@ -3,11 +3,12 @@ require 'json'
 require 'uri'
 require 'net/http'
 
-$session_id = '673e5ee7-5fee-4c3e-887d-13380af61c9e'
-$token = '3276982355070137448'
+$session_id = 'fb87dab2-f16a-4510-b87a-480e11dfe7e1'
+$token = '3263364287147515173'
 
-pp 'Provide player id: ruby ./buy.rb player_id max_price' and exit unless ARGV[0]
-pp 'Provide max buy price ruby ./buy.rb player_id max_price' and exit unless ARGV[1]
+pp 'Provide player id: ruby ./buy.rb player_id max_buy_price sell_price' and exit unless ARGV[0]
+pp 'Provide max buy price ruby ./buy.rb player_id max_buy_price sell_price' and exit unless ARGV[1]
+pp 'Provide sell price ruby ./buy.rb player_id max_buy_price sell_price' and exit unless ARGV[2]
 
 def fetch_auctions player_id, max_price
   uri = URI "https://utas.external.s3.fut.ea.com/ut/game/fifa17/transfermarket?maskedDefId=#{player_id}&start=0&num=16&type=player&maxb=#{max_price}&micr=#{[150,200,250,300,350,400,450,500,550,600,650].sample}"
@@ -33,8 +34,10 @@ def bid auction_id, bid
   response = JSON.parse res.body
   if response['currencies']
     puts "Bought for #{bid}. #{response['currencies'].first['finalFunds']} gold left"
+    response['currencies'].first['finalFunds'].to_i
   else
     puts 'Failed to buy'
+    false
   end
 end
 
@@ -56,16 +59,67 @@ def prepare_request req
   req['X-UT-Embed-Error'] = 'true'
 end
 
+def get_new_item_id
+  uri = URI 'https://utas.external.s3.fut.ea.com/ut/game/fifa17/purchased/items'
+  req = Net::HTTP::Get.new(uri)
+  prepare_request(req)
+  req['X-HTTP-Method-Override'] = 'GET'
+  puts 'Fetching newly purchased item'
+  res = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) {|http|
+    http.request(req)
+  }
+  response = JSON.parse res.body
+  puts "New item id: #{response['itemData'].first['id']}"
+  response['itemData'].first['id']
+end
+
+def put_on_auction item_id
+  uri = URI 'https://utas.external.s3.fut.ea.com/ut/game/fifa17/auctionhouse'
+  req = Net::HTTP::Get.new(uri)
+  prepare_request(req)
+  req['X-HTTP-Method-Override'] = 'POST'
+  puts "Putting newly purchased item on auction for #{ARGV[2]}"
+  req.body = {startingBid: ARGV[2].to_i - 100, duration: 3600, itemData: { id: item_id }, buyNowPrice: ARGV[2].to_i}.to_json
+  res = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) {|http|
+    http.request(req)
+  }
+  response = JSON.parse res.body
+  puts response
+end
+
+def move_to_trade_pile id
+  uri = URI 'https://utas.external.s3.fut.ea.com/ut/game/fifa17/item'
+  req = Net::HTTP::Post.new(uri)
+  prepare_request(req)
+  req['X-HTTP-Method-Override'] = 'PUT'
+  req.body = {itemData: [{id: "#{id}", pile: "trade"}]}.to_json
+  puts "Putting newly purchased(#{id}) item on trade pile"
+  res = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) {|http|
+    http.request(req)
+  }
+  response = JSON.parse res.body
+  puts response
+end
+
 loop do
-  auction = fetch_auctions(ARGV[0], ARGV[1]).first
-  wait = 1 + rand
-  if auction
-    puts "Found player for #{auction['buyNowPrice']}"
-    bid auction['tradeId'], auction['buyNowPrice']
-    #puts "Waiting for #{wait} seconds"
-    break
-  else
-    puts "Nothing found. Waiting for #{wait} seconds"
+  begin
+    auction = fetch_auctions(ARGV[0], ARGV[1]).first
+    wait = 1.5 + rand
+    if auction
+      puts "Found player for #{auction['buyNowPrice']}"
+      if money_left = bid(auction['tradeId'], auction['buyNowPrice'])
+        sleep wait
+        id = get_new_item_id
+        sleep wait
+        move_to_trade_pile id
+        put_on_auction id
+        sleep wait + 3
+      end
+    else
+      puts "Nothing found. Waiting for #{wait} seconds"
+    end
+    sleep wait
+  rescue Errno::ECONNRESET => e
+    puts e.message
   end
-  sleep wait
 end
