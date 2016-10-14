@@ -2,6 +2,8 @@
 require 'json'
 require 'uri'
 require 'net/http'
+require 'openssl'
+OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 
 $session_id = ''
 $token = ''
