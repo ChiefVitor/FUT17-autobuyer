@@ -17,7 +17,6 @@ ruby ./buy.rb player_id max_buy_price sell_price
 
 First argument is player id. Here are some sample player ids
 
-###### 180819 - lallana
 ###### 164859 - wallcott
 ###### 162895 - fabregas
 ###### 202652 - sterling
