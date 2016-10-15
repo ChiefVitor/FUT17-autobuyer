@@ -15,11 +15,8 @@ ruby 2.1.2 or newer
 ruby ./buy.rb player_id max_buy_price sell_price
 ```
 
-First argument is player id. Here are some sample player ids
+First argument is player id. 
+To get a player id you just need to search on sofifa.com. 
+The ID will be at the right of player's name.
 
-###### 164859 - wallcott
-###### 162895 - fabregas
-###### 202652 - sterling
-###### 190456 - clyne
-###### 171833 - sturridge
 
