@@ -51,10 +51,9 @@ def bid auction_id, bid
 end
 
 def prepare_request req
-  req['Cookie'] = '__utma=103303007.1086497976.1475411054.1475411054.1475411054.1; __utmc=103303007; __utmz=103303007.1475411054.1.1.utmcsr=easports.com|utmccn=(referral)|utmcmd=referral|utmcct=/ru/fifa/ultimate-team/fut/database; _nx_mpcid=bed26e67-b135-4f4c-b9bc-7221546eedc2; utag_main=v_id:0157855a0e58001bd002eca835ff05079018a0710093c$_sn:1$_ss:0$_pn:3%3Bexp-session$_st:1475412901219$ses_id:1475411054168%3Bexp-session'
   req['Origin'] = 'https://www.easports.com'
   req['Accept-Encoding'] = 'deflate, br'
-  req['Accept-Language'] = 'ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4,gl;q=0.2,fr;q=0.2,de;q=0.2'
+  req['Accept-Language'] = 'en-US'
   req['Connection'] = 'keep-alive'
   req['X-UT-SID'] = $session_id
   req['X-UT-PHISHING-TOKEN'] = $token
@@ -110,7 +109,12 @@ def move_to_trade_pile id
   puts response
 end
 
+stop_bot_in = 900 # 15 minutes
+wait_after_stop = 300 # 5 minutes
+execution_time = 0
+
 loop do
+  start = Time.now
   begin
     auction = fetch_auctions(ARGV[0], ARGV[1])
     wait = 2 + rand
@@ -130,5 +134,12 @@ loop do
     sleep wait
   rescue Errno::ECONNRESET => e
     puts e.message
+  end
+  finish = Time.now
+  execution_time += finish - start
+  if execution_time > stop_bot_in
+    puts "Stopping bot for #{wait_after_stop} seconds so it won't be blocked"
+    execution_time = 0
+    sleep wait_after_stop
   end
 end
